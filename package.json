@@ -1,20 +1,16 @@
 {
-  "name": "bot",
+  "name": "socialize32-bot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Bot de WhatsApp para Socialize32",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@whiskeysockets/baileys": "^7.0.0-rc.9",
-    "dotenv": "^17.3.1",
-    "node-cron": "^4.2.1",
-    "pino": "^10.3.1",
-    "qrcode-terminal": "^0.12.0"
+    "@whiskeysockets/baileys": "^6.5.0",
+    "pino": "^8.16.0",
+    "node-cron": "^3.0.3",
+    "qrcode-terminal": "^0.12.0",
+    "link-preview-js": "^3.0.4"
   }
 }
