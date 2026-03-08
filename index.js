@@ -6,12 +6,10 @@ const {
 } = require("@whiskeysockets/baileys");
 const pino = require("pino");
 const cron = require("node-cron");
-const qrcode = require("qrcode-terminal");
 
 async function conectarBot() {
     console.log("🚀 SOCIALIZE32 BOT: INICIANDO...");
 
-    // Carpeta 'sesion_auth' para mantener la sesión activa en Railway
     const { state, saveCreds } = await useMultiFileAuthState('sesion_auth');
     const { version } = await fetchLatestBaileysVersion();
 
@@ -19,18 +17,26 @@ async function conectarBot() {
         version,
         auth: state,
         logger: pino({ level: "silent" }),
-        browser: ["Socialize32 Bot", "Chrome", "1.0.0"],
+        // El nombre del navegador es vital para que el Pairing Code funcione
+        browser: ["Ubuntu", "Chrome", "20.0.04"], 
         printQRInTerminal: false
     });
 
+    // --- LÓGICA DE EMPAREJAMIENTO (Sustituye al QR) ---
+    if (!sock.authState.creds.registered) {
+        // ⚠️ CAMBIA ESTO: Pon tu número con código de país (Ej: 573100000000)
+        const miNumero = "TU_NUMERO_AQUI"; 
+
+        setTimeout(async () => {
+            let code = await sock.requestPairingCode(miNumero);
+            code = code?.match(/.{1,4}/g)?.join("-") || code;
+            console.log(`\n\n🔗 TU CÓDIGO DE VINCULACIÓN ES: ${code}\n\n`);
+        }, 3000);
+    }
+
     // --- GESTIÓN DE CONEXIÓN ---
     sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        if (qr) {
-            console.log("📢 ESCANEA EL QR PARA CONECTAR:");
-            qrcode.generate(qr, { small: true });
-        }
+        const { connection, lastDisconnect } = update;
 
         if (connection === 'open') {
             console.log('✅ BOT ONLINE 24/7 EN SOCIALIZE32');
@@ -51,26 +57,21 @@ async function conectarBot() {
         const texto = (msg.message.conversation || msg.message.extendedTextMessage?.text || "").toLowerCase();
         const groupJid = msg.key.remoteJid;
 
-        // Lista de palabras prohibidas
         const insultos = ["mierda", "hpta", "gonorrea", "malparido", "hijueputa", "carechimba"]; 
 
         if (groupJid.endsWith('@g.us') && insultos.some(p => texto.includes(p))) {
             try {
-                // Eliminar el mensaje ofensivo
+                // Eliminar mensaje y expulsar
                 await sock.sendMessage(groupJid, { delete: msg.key });
-                
-                // Expulsar al usuario
                 await sock.groupParticipantsUpdate(groupJid, [msg.key.participant], "remove");
-                
-                await sock.sendMessage(groupJid, { text: '❌ Usuario expulsado automáticamente por falta de respeto.' });
+                await sock.sendMessage(groupJid, { text: '❌ Usuario expulsado por lenguaje inapropiado.' });
             } catch (err) {
-                console.log("Error en moderación (posiblemente el bot no es admin):", err);
+                console.log("Error en moderación (Revisa si el bot es Admin):", err);
             }
         }
     });
 
-    // --- SALUDO AUTOMÁTICO 6 AM (Cron Job) ---
-    // El ID del grupo es el que pusiste: 120363385735164283@g.us
+    // --- SALUDO AUTOMÁTICO 6 AM ---
     cron.schedule('0 6 * * *', async () => {
         const idGrupo = "120363385735164283@g.us"; 
         try {
